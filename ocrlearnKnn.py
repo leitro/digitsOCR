@@ -12,7 +12,7 @@ def initKnn():
     return knn, train, trainLabel
 
 def updateKnn(knn, train, trainLabel, newData=None, newDataLabel=None):
-    if newData != None and newDataLabel != None:
+    if (newData is not None) and (newDataLabel is not None):
         print(train.shape, newData.shape)
         newData = newData.reshape(-1,400).astype(np.float32)
         train = np.vstack((train,newData))
@@ -55,16 +55,16 @@ def concatenate(images):
 
 knn, train, trainLabel = initKnn()
 knn, train, trainLabel = updateKnn(knn, train, trainLabel)
-cap = cv2.VideoCapture(1)
-#width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-#height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-width = 426*2
-height = 480
-videoFrame = cv2.VideoWriter('frame.avi',cv2.VideoWriter_fourcc('M','J','P','G'),25,(int(width),int(height)),True)
+cap = cv2.VideoCapture(0)
+width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+# width = 426
+# height = 480
+videoFrame = cv2.VideoWriter('frame.avi',cv2.VideoWriter_fourcc('M','J','P','G'),25,(int(width)*2,int(height)),True)
 count = 0
 while True:
     ret, frame = cap.read()
-    frame = frame[:,:426]
+    frame = frame[:,:width]
     rois, edges = findRoi(frame, 50)
     digits = []
     for r in rois:
