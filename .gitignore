@@ -1,3 +1,5 @@
 *.avi
 *.swp
 .idea/
+*.png
+*.npy
