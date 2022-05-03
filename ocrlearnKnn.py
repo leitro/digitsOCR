@@ -1,6 +1,8 @@
+from copyreg import pickle
 import cv2
 import numpy as np
-
+from numpy import save
+import os.path
 
 def initKnn():
     knn = cv2.ml.KNearest_create()
@@ -9,6 +11,9 @@ def initKnn():
     cells = [np.hsplit(row,100) for row in np.vsplit(gray,50)]
     train = np.array(cells).reshape(-1,400).astype(np.float32)
     trainLabel = np.repeat(np.arange(10),500)
+    if os.path.exists('train.npy') and os.path.exists('trainLabel.npy'):
+        train = np.load('train.npy',allow_pickle=True)
+        trainLabel = np.load('trainLabel.npy',allow_pickle=True)
     return knn, train, trainLabel
 
 def updateKnn(knn, train, trainLabel, newData=None, newDataLabel=None):
@@ -18,6 +23,8 @@ def updateKnn(knn, train, trainLabel, newData=None, newDataLabel=None):
         train = np.vstack((train,newData))
         trainLabel = np.hstack((trainLabel,newDataLabel))
     knn.train(train,cv2.ml.ROW_SAMPLE,trainLabel)
+    save('train.npy', train)
+    save('trainLabel.npy', trainLabel)
     return knn, train, trainLabel
 
 def findRoi(frame, thresValue):
@@ -32,7 +39,7 @@ def findRoi(frame, thresValue):
     absY = cv2.convertScaleAbs(y)
     dst = cv2.addWeighted(absX,0.5,absY,0.5,0)
     ret, ddst = cv2.threshold(dst,thresValue,255,cv2.THRESH_BINARY)
-    im, contours, hierarchy = cv2.findContours(ddst,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv2.findContours(ddst,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for c in contours:
         x, y, w, h = cv2.boundingRect(c)
         if w > 10 and h > 20:
@@ -58,13 +65,12 @@ knn, train, trainLabel = updateKnn(knn, train, trainLabel)
 cap = cv2.VideoCapture(0)
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-# width = 426
-# height = 480
 videoFrame = cv2.VideoWriter('frame.avi',cv2.VideoWriter_fourcc('M','J','P','G'),25,(int(width)*2,int(height)),True)
 count = 0
 while True:
     ret, frame = cap.read()
     frame = frame[:,:width]
+    frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
     rois, edges = findRoi(frame, 50)
     digits = []
     for r in rois:
